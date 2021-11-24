@@ -324,7 +324,7 @@ class Amazon extends AbstractSynchronization
 
         $stock = $this->_getAmazonStock($entity);
 
-        if (!$this->_checkProductData($entity, 'amazon_stock', (string) $stock)) {
+        if (!$this->_checkProductData($entity, 'amazon_availability', (string) $stock)) {
             $this->_exportData[] = [
                 'MessageID' => $entity['id'],
                 'OperationType' => 'Update',
@@ -348,7 +348,8 @@ class Amazon extends AbstractSynchronization
     public function processProductAvailabilitiesResponse(\SimpleXMLElement $xml)
     {
         foreach ($this->_processedData as $id => $stock) {
-            $this->synchronizationsTable()->getSynchronizedTable('Products')->updateAll(['amazon_stock' => $stock], ['id' => $id]);
+            $this->synchronizationsTable()->getSynchronizedTable('Products')->updateAll(['amazon_availability' => $stock], ['id' => $id]);
+            $this->synchronizationsTable()->addImportSuccess('Products', $this->_getRemoteKey('Products', $id));
         }
     }
 
