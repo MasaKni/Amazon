@@ -375,9 +375,8 @@ class Amazon extends AbstractSynchronization
             ->first()['id'] ?? null;
 
         $entity = [
-            #'mall_id' => $order->getOrderId(),
-            #'mall_status' => $order->getStatus(),
-            #'customer_note' => $order->getNote,
+            'amazon_id' => $order->getAmazonOrderId(),
+            'amazon_status' => $order->getOrderStatus(),
             'customer_email' => $buyerInfo->getBuyerEmail(),
             'customer_phone' => $shippingAddress->getPhone(),
             'billing_name' => $shippingAddress->getName(),
