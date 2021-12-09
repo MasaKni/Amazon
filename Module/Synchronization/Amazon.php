@@ -538,6 +538,7 @@ class Amazon extends AbstractSynchronization
                 $items = [];
 
                 do {
+                    \sleep(1);
                     $result = $api->getOrderItems($order->getAmazonOrderId(), $nextItemsToken ?? null);
 
                     if (!$result->valid() || !($orderItems = $result->getPayload())) {
