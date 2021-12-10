@@ -523,8 +523,8 @@ class Amazon extends AbstractSynchronization
     protected function _getOrders(): \Generator
     {
         $api = new OrdersApi($this->_configuration);
-        $last = ($this->_getLastModified($this->_typeId, 'Orders') ?? new \DateTimeImmutable('yesterday'))->format('Y-m-d\TH:i:s\Z');
-        $now = new \DateTimeImmutable('-5 minutes');
+        $last = ($this->_getLastModified($this->_typeId, 'Orders') ?? new \DateTimeImmutable('yesterday'))->setTimezone(new \DateTimeZone('Europe/London'))->format('Y-m-d\TH:i:s\Z');
+        $now = new \DateTimeImmutable('-1 minute');
 
         do {
             $result = $api->getOrders($this->_marketplaces, null, null, $last, null, [Order::ORDER_STATUS_UNSHIPPED], null, null, null, null, null, null, $nextToken ?? null);
