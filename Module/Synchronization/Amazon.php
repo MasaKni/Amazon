@@ -604,7 +604,7 @@ class Amazon extends AbstractSynchronization
      */
     protected function _getAmazonStock($entity): int
     {
-        return (int) $entity['stock'];
+        return (int) $entity['stock'] > 0 ? (int) $entity['stock'] : 0;
     }
 
     /**
