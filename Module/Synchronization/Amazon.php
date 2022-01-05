@@ -363,11 +363,6 @@ class Amazon extends AbstractSynchronization
      */
     protected function _buildOrderEntity(Order $order, array $items): ?array
     {
-        // already exists
-        if ($this->_getForeignKey('Orders', $order->getAmazonOrderId())) {
-            return null;
-        }
-
         $buyerInfo = $order->getBuyerInfo() ?? new BuyerInfo();
         $shippingAddress = $order->getShippingAddress() ?? new OrderAddress();
 
@@ -527,6 +522,7 @@ class Amazon extends AbstractSynchronization
         $now = new \DateTimeImmutable('-1 minute');
 
         do {
+            $burst = 0;
             $result = $api->getOrders($this->_marketplaces, null, null, $last, null, [Order::ORDER_STATUS_UNSHIPPED], null, null, null, null, null, null, $nextToken ?? null);
 
             if (!$result->valid() || !($orders = $result->getPayload())) {
@@ -534,11 +530,20 @@ class Amazon extends AbstractSynchronization
             }
 
             foreach ($orders->getOrders() as $order) {
+                // if already exists, do not fetch items
+                if ($this->_getForeignKey('Orders', $order->getAmazonOrderId())) {
+                    continue;
+                }
+
                 // fetch order items
                 $items = [];
 
                 do {
-                    \sleep(1);
+                    if (++$burst == 20) {
+                        $burst = 0;
+                        \sleep(3600);
+                    }
+
                     $result = $api->getOrderItems($order->getAmazonOrderId(), $nextItemsToken ?? null);
 
                     if (!$result->valid() || !($orderItems = $result->getPayload())) {
