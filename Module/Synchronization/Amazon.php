@@ -290,21 +290,28 @@ class Amazon extends AbstractSynchronization
 
         $sku = $data['seller-sku'];
 
-        if (!$sku || $this->_getForeignKey('Products', $sku)) {
+        if (!$sku) {
             return [null, null];
         }
 
-        $p = $this->synchronizationsTable()->getSynchronizedTable('Products')
-            ->findByEan($sku)
-            ->select(['id', 'model'])
-            ->first();
+        // pair by EAN
+        if (!$this->_getForeignKey('Products', $sku)) {
+            $p = $this->synchronizationsTable()->getSynchronizedTable('Products')
+                ->findByEan($sku)
+                ->select(['id', 'model'])
+                ->first();
 
-        if ($p) {
-            $this->_saveRemoteKey('Products', $p['id'], $sku);
-            $this->synchronizationsTable()->addImportSuccess('Products', $sku);
-        } else {
-            $this->synchronizationsTable()->addImportError('Products', $sku, 'Product with SKU ' . $sku . ' not found.');
+            if ($p) {
+                $this->_saveRemoteKey('Products', $p['id'], $sku);
+                $this->synchronizationsTable()->addImportSuccess('Products', $sku);
+            } else {
+                $this->synchronizationsTable()->addImportError('Products', $sku, 'Product with SKU ' . $sku . ' not found.');
+
+                return [null, null];
+            }
         }
+
+        $this->_updateProductByAmazonData($data);
 
         return [null, null];
     }
@@ -471,6 +478,16 @@ class Amazon extends AbstractSynchronization
         }
 
         return $entity;
+    }
+
+    /**
+     * Update product data.
+     *
+     * @param array $data
+     */
+    protected function _updateProductByAmazonData(array $data)
+    {
+        $this->synchronizationsTable()->getSynchronizedTable('Products')->updateAll(['amazon_availability' => (int) $data['quantity']], ['id' => $this->_getForeignKey('Products', $data['seller-sku'])]);
     }
 
     /**
