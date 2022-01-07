@@ -370,6 +370,11 @@ class Amazon extends AbstractSynchronization
      */
     protected function _buildOrderEntity(Order $order, array $items): ?array
     {
+        // already exists
+        if ($this->_getForeignKey('Orders', $order->getAmazonOrderId())) {
+            return null;
+        }
+
         $buyerInfo = $order->getBuyerInfo() ?? new BuyerInfo();
         $shippingAddress = $order->getShippingAddress() ?? new OrderAddress();
 
