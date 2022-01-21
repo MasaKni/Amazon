@@ -62,11 +62,13 @@ class Amazon extends AbstractSynchronization
 
     /** @var array<string,string> */
     protected $_feedTypes = [
+        'Products' => 'POST_PRODUCT_DATA',
         'ProductAvailabilities' => 'POST_INVENTORY_AVAILABILITY_DATA'
     ];
 
     /** @var array<string,string> */
     protected $_messageTypes = [
+        'Products' => 'Product',
         'ProductAvailabilities' => 'Inventory'
     ];
 
@@ -298,7 +300,7 @@ class Amazon extends AbstractSynchronization
         if (!$this->_getForeignKey('Products', $sku)) {
             $p = $this->synchronizationsTable()->getSynchronizedTable('Products')
                 ->findByEan($sku)
-                ->select(['id', 'model'])
+                ->select(['id'])
                 ->first();
 
             if ($p) {
@@ -314,6 +316,49 @@ class Amazon extends AbstractSynchronization
         $this->_updateProductByAmazonData($data);
 
         return [null, null];
+    }
+
+    /**
+     * Export products.
+     *
+     * @param array|\ArrayAccess $entity
+     *
+     * @return int|null
+     */
+    public function exportProducts($entity): ?int
+    {
+        if ($this->_getRemoteKey('Products', $entity['id']) || !$entity['ean']) {
+            return null;
+        }
+
+        $this->_exportData[] = [
+            'MessageID' => $entity['id'],
+            'OperationType' => 'Update',
+            'Product' => [
+                'SKU' => $entity['ean'],
+                'DescriptionData' => [
+                    'Title' => $entity['name'],
+                    'Brand' => $entity['manufacturer_id'] ? $entity['manufacturer']['name'] : ''
+                ]
+            ]
+        ];
+
+        $this->_processedData[$entity['id']] = $entity['ean'];
+
+        return null;
+    }
+
+    /**
+     * Process response from products import.
+     *
+     * @param \SimpleXMLElement $xml
+     */
+    public function processProductsResponse(\SimpleXMLElement $xml)
+    {
+        foreach ($this->_processedData as $id => $ean) {
+            $this->_saveRemoteKey('Products', $id, $ean);
+            $this->synchronizationsTable()->addImportSuccess('Products', $ean);
+        }
     }
 
     /**
