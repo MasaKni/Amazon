@@ -222,7 +222,7 @@ class Amazon extends AbstractSynchronization
         // create a feed
         $specification = new CreateFeedSpecification([
             'feed_type' => $this->_feedTypes[$name],
-            'marketplace_ids' => $this->_marketplaces,
+            'marketplace_ids' => $name == 'Products' ? [$this->_mainMarketplace] : $this->_marketplaces,
             'input_feed_document_id' => $result->getFeedDocumentId()
         ]);
 
@@ -339,6 +339,10 @@ class Amazon extends AbstractSynchronization
             'OperationType' => 'Update',
             'Product' => [
                 'SKU' => $entity['ean'],
+                'StandardProductID' => [
+                    'Type' => 'EAN',
+                    'Value' => $entity['ean']
+                ],
                 'DescriptionData' => [
                     'Title' => $entity['name'],
                     'Brand' => $entity['manufacturer_id'] ? $entity['manufacturer']['name'] : '',
@@ -347,7 +351,7 @@ class Amazon extends AbstractSynchronization
             ]
         ];
 
-        $this->_processedData[$entity['id']] = $entity['ean'];
+        $this->_processedData[$entity['ean']] = $entity['id'];
 
         return null;
     }
@@ -359,9 +363,16 @@ class Amazon extends AbstractSynchronization
      */
     public function processProductsResponse(\SimpleXMLElement $xml)
     {
-        foreach ($this->_processedData as $id => $ean) {
-            $this->_saveRemoteKey('Products', $id, $ean);
-            $this->synchronizationsTable()->addImportSuccess('Products', $ean);
+        foreach ($xml->Message->ProcessingReport->Result as $result) {
+            if ($result->ResultCode == 'Error' && \preg_match('/^SKU (.+?), (.*)/', (string) $result->ResultDescription, $m)) {
+                unset($this->_processedData[$m[1]]);
+                $this->synchronizationsTable()->addImportError('Products', $m[1], $m[2]);
+            }
+        }
+
+        foreach ($this->_processedData as $ean => $id) {
+            $this->_saveRemoteKey('Products', (int) $id, (string) $ean);
+            $this->synchronizationsTable()->addImportSuccess('Products', (string) $ean);
         }
     }
 
