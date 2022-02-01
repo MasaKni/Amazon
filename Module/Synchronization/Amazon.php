@@ -720,7 +720,7 @@ class Amazon extends AbstractSynchronization
      *
      * @return string
      */
-    public function _countryOfOrigin($entity): string
+    protected function _countryOfOrigin($entity): string
     {
         return 'CN';
     }
