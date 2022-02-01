@@ -338,7 +338,8 @@ class Amazon extends AbstractSynchronization
                 'SKU' => $entity['ean'],
                 'DescriptionData' => [
                     'Title' => $entity['name'],
-                    'Brand' => $entity['manufacturer_id'] ? $entity['manufacturer']['name'] : ''
+                    'Brand' => $entity['manufacturer_id'] ? $entity['manufacturer']['name'] : '',
+                    'CountryOfOrigin' => $this->_countryOfOrigin($entity)
                 ]
             ]
         ];
@@ -707,6 +708,18 @@ class Amazon extends AbstractSynchronization
         }
 
         return (float) $money->getAmount();
+    }
+
+    /**
+     * Return product country of origin (required to create listing).
+     *
+     * @param array|\ArrayAccess $entity
+     *
+     * @return string
+     */
+    public function _countryOfOrigin($entity): string
+    {
+        return 'CN';
     }
 
     /**
