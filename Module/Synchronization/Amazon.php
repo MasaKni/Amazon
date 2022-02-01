@@ -241,12 +241,20 @@ class Amazon extends AbstractSynchronization
             throw new ApiException('Feed does not contain document ID');
         }
 
-        $document = $api->getfeedDocument($feed->getResultFeedDocumentId());
-        \file_put_contents(TMP . 'amazon-feed-report.xml', \file_get_contents($document->getUrl()));
+        $document = $api->getFeedDocument($feed->getResultFeedDocumentId());
+        $filename = TMP . 'amazon-feed-report-' . $name . '.xml';
 
-        // process response (gzipped)
+        \file_put_contents($filename, \file_get_contents($document->getUrl()));
+
+        // possibly gzipped
+        if ($document->getCompressionAlgorithm()) {
+            \exec('mv ' . $filename . ' ' . $filename . '.gz');
+            \exec('gunzip ' . $filename . '.gz');
+        }
+
+        // process response
         if (\method_exists($this, 'process' . $name . 'Response')) {
-            $responseXml = \simplexml_load_file(TMP . 'amazon-feed-report.xml');
+            $responseXml = \simplexml_load_file($filename);
 
             $this->{'process' . $name . 'Response'}($responseXml);
         }
