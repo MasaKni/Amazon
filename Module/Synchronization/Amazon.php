@@ -87,6 +87,9 @@ class Amazon extends AbstractSynchronization
     /** @var mixed[] */
     protected $_processedData;
 
+    /** @var string[] */
+    protected $_exportOnlyNew = ['Products'];
+
     /**
      * {@inheritdoc}
      */
