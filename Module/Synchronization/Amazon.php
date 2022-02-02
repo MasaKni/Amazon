@@ -680,10 +680,18 @@ class Amazon extends AbstractSynchronization
         }
 
         $document = $api->getReportDocument($report->getReportDocumentId(), 'GET_MERCHANT_LISTINGS_ALL_DATA');
-        \file_put_contents(TMP . 'amazon-report.csv', \file_get_contents($document->getUrl()));
+        $filename = TMP . 'amazon-report.csv';
+
+        \file_put_contents($filename, \file_get_contents($document->getUrl()));
+
+        // possibly gzipped
+        if ($document->getCompressionAlgorithm()) {
+            \exec('mv ' . $filename . ' ' . $filename . '.gz');
+            \exec('gunzip ' . $filename . '.gz');
+        }
 
         $this->_delimeter = "\t";
-        $this->_openCsvFile(TMP . 'amazon-report.csv');
+        $this->_openCsvFile($filename);
 
         while ($row = $this->_nextCsv()) {
             yield $row;
